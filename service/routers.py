@@ -5,16 +5,17 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from service.contracts import Token, UserReg, User
-from service.utils.auth import create_access_token, verify_password, validate_access_token
+from service.contracts import Token, UserReg, User, Order, OrderForm
+from service.utils.auth import create_access_token, verify_password, authorize_user, get_password_hash
 from service.utils.dao import get_users_email, set_user, get_user_by_email
+from service.utils.orders import check_order_form, create_order
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 # Приветственная HTML страница
-@router.get("/", tags=["html"])
+@router.get("/", tags=["HTML"])
 def root():
     html_content = '''
     <html>
@@ -27,7 +28,7 @@ def root():
 
 
 # Регистрация нового пользователя
-@router.post("/register", response_model=Token)
+@router.post("/register", response_model=Token, tags=["Authorization"])
 async def register(user: UserReg):
     # Проверка валидности электронной почты
     if not re.match(r"[^@]+@[^@]+\.[^@]+", user.email):
@@ -41,18 +42,20 @@ async def register(user: UserReg):
     if not len(user.password) > 0:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='The password cannot be empty')
 
+    # Хеширование пароля
+    hashed_password = get_password_hash(user.password)
+
     # Записываем пользователя в БД
-    set_user(user)
+    set_user(user, hashed_password)
 
     # Создание токена аутентификации
     access_token = create_access_token(user.email)
 
-    # Возвращение токена аутентификации
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 # Аутентификация пользователя
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, tags=["Authorization"])
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,21 +79,34 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 
 
 # Получение данных пользователя
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=User, tags=["Authorization"])
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    return authorize_user(token)
 
-    # Проверка валидности токена и получение email
-    email = validate_access_token(token)
 
-    # Получение данных пользователя
-    user_db = get_user_by_email(email)
-    if user_db is None:
-        raise credentials_exception
-    user = User(name=user_db.name, email=user_db.email)
+# Создание заказа
+@router.post("/order", response_model=Order, tags=["Orders"])
+def set_user_order(order_form: list[OrderForm], token: Annotated[str, Depends(oauth2_scheme)]):
+    # Авторизация пользователя
+    user = authorize_user(token)
 
-    return user
+    # Проверка состава заказа
+    if not check_order_form(order_form):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='The items specified in the order were not found')
+
+    # Создание заказа пользователя
+    order = create_order(order_form, user.email)
+
+    return order
+
+
+# Получение заказов пользователя
+# @router.get("/orders", response_model=[Order], tags=["Orders"])
+# def get_user_orders(token: Annotated[str, Depends(oauth2_scheme)]):
+#     # Авторизация пользователя
+#     user = authorize_user(token)
+#
+#     # Получение заказов пользователя
+#
+#     return order

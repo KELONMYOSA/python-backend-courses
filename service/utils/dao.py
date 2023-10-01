@@ -1,7 +1,7 @@
+import json
 import sqlite3
 
-from service.contracts import UserReg, UserInDB
-from service.utils.auth import get_password_hash
+from service.contracts import UserReg, UserInDB, MenuPosition, Order, OrderEncoder
 
 DB_PATH = "database/database.sqlite"
 
@@ -24,13 +24,10 @@ def get_users_email() -> list[str]:
 
 
 # Создание нового пользователя
-def set_user(user: UserReg):
+def set_user(user: UserReg, hashed_password: str):
     # Устанавливаем соединение с базой данных
     connection = sqlite3.connect(DB_PATH)
     cursor = connection.cursor()
-
-    # Хеширование пароля
-    hashed_password = get_password_hash(user.password)
 
     # Добавляем нового пользователя
     cursor.execute('INSERT INTO user (name, email, password) VALUES (?, ?, ?)',
@@ -58,3 +55,76 @@ def get_user_by_email(email: str) -> UserInDB | None:
     connection.close()
 
     return user
+
+
+# Получение всех id позиций в меню
+def get_menu_ids() -> list[int]:
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    # Выбираем все позиции
+    cursor.execute('SELECT id FROM menu')
+    ids = cursor.fetchall()
+    ids = list(map(lambda x: x[0], ids))
+
+    # Закрываем соединение
+    connection.close()
+
+    return ids
+
+
+# Получаем позицию меню по id
+def get_menu_position_by_id(menu_id: int) -> MenuPosition | None:
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    # Получаем данные о позиции
+    cursor.execute('SELECT name, price FROM menu WHERE id = ?', (menu_id,))
+    result = cursor.fetchall()
+    position = None
+    if result:
+        position = MenuPosition(id=menu_id, name=result[0][0], price=result[0][1])
+
+    # Закрываем соединение
+    connection.close()
+
+    return position
+
+
+# Создание записи нового заказа и получение id
+def set_order(order: Order) -> int:
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    # Добавление нового заказа
+    cursor.execute('INSERT INTO "order" (time, price, positions) VALUES (?, ?, ?)',
+                   (order.time, order.total_price, json.dumps(order.positions, cls=OrderEncoder)))
+
+    # Сохраняем изменения
+    connection.commit()
+
+    # Получаем id заказа
+    cursor.execute('SELECT id FROM "order" WHERE time = ? AND price = ?', (order.time, order.total_price))
+    order_id = cursor.fetchall()[0][0]
+
+    # Закрываем соединение
+    connection.close()
+
+    return order_id
+
+
+# Записываем заказ пользователю
+def set_order_id_to_user(email: str, order_id: int):
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    # Записываем пользователю заказ
+    cursor.execute('INSERT INTO user_orders (email, order_id) VALUES (?, ?)', (email, order_id))
+
+    # Сохраняем изменения и закрываем соединение
+    connection.commit()
+    connection.close()

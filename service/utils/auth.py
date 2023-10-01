@@ -4,6 +4,9 @@ from fastapi import HTTPException, status
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
+from service.contracts import User
+from service.utils.dao import get_user_by_email
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "my_secret_key"
 ALGORITHM = "HS256"
@@ -28,8 +31,8 @@ def create_access_token(email: str) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-# Проверка токена
-def validate_access_token(token: str) -> str:
+# Проверка токена и получение данных пользователя
+def authorize_user(token: str) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -43,4 +46,10 @@ def validate_access_token(token: str) -> str:
     except JWTError:
         raise credentials_exception
 
-    return email
+    # Получение данных пользователя
+    user_db = get_user_by_email(email)
+    if user_db is None:
+        raise credentials_exception
+    user = User(name=user_db.name, email=user_db.email)
+
+    return user

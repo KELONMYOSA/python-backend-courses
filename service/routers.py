@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from service.contracts import Token, UserReg, User, Order, OrderForm
 from service.utils.auth import create_access_token, verify_password, authorize_user, get_password_hash
 from service.utils.dao import get_users_email, set_user, get_user_by_email
-from service.utils.orders import check_order_form, create_order
+from service.utils.orders import check_order_form, create_order, get_orders_by_email, get_order_by_id_and_email
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -102,11 +102,27 @@ def set_user_order(order_form: list[OrderForm], token: Annotated[str, Depends(oa
 
 
 # Получение заказов пользователя
-# @router.get("/orders", response_model=[Order], tags=["Orders"])
-# def get_user_orders(token: Annotated[str, Depends(oauth2_scheme)]):
-#     # Авторизация пользователя
-#     user = authorize_user(token)
-#
-#     # Получение заказов пользователя
-#
-#     return order
+@router.get("/orders", response_model=list[Order], tags=["Orders"])
+def get_user_orders(token: Annotated[str, Depends(oauth2_scheme)]):
+    # Авторизация пользователя
+    user = authorize_user(token)
+
+    # Получение заказов пользователя
+    orders = get_orders_by_email(user.email)
+
+    return orders
+
+
+# Получение заказа пользователя по id
+@router.get("/order/{order_id}", response_model=Order, tags=["Orders"])
+def get_user_order_by_id(order_id: int, token: Annotated[str, Depends(oauth2_scheme)]):
+    # Авторизация пользователя
+    user = authorize_user(token)
+
+    # Получение заказа пользователя
+    order = get_order_by_id_and_email(user.email, order_id)
+    if order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='An order with this id was not found for this user')
+
+    return order

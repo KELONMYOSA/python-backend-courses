@@ -1,7 +1,8 @@
 import json
 import sqlite3
+from datetime import datetime
 
-from service.contracts import UserReg, UserInDB, MenuPosition, Order, OrderEncoder
+from service.contracts import UserReg, UserInDB, MenuPosition, Order, OrderEncoder, OrderPosition
 
 DB_PATH = "database/database.sqlite"
 
@@ -128,3 +129,42 @@ def set_order_id_to_user(email: str, order_id: int):
     # Сохраняем изменения и закрываем соединение
     connection.commit()
     connection.close()
+
+
+# Получаем заказ по id
+def get_order_by_id(order_id: int) -> Order | None:
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    # Получаем данные о позиции
+    cursor.execute('SELECT time, price, positions FROM "order" WHERE id = ?', (order_id,))
+    result = cursor.fetchall()
+    order = None
+    if result:
+        order = Order(id=order_id, time=datetime.strptime(result[0][0], '%Y-%m-%d %H:%M:%S.%f'),
+                      total_price=result[0][1], positions=json.loads(result[0][2]))
+
+    # Закрываем соединение
+    connection.close()
+
+    return order
+
+
+# Получаем id заказов по email
+def get_order_ids_by_email(email: str) -> list[int] | None:
+    # Устанавливаем соединение с базой данных
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    # Получаем id заказов
+    cursor.execute('SELECT order_id FROM user_orders WHERE email = ?', (email,))
+    result = cursor.fetchall()
+    ids = None
+    if result:
+        ids = list(map(lambda x: x[0], result))
+
+    # Закрываем соединение
+    connection.close()
+
+    return ids

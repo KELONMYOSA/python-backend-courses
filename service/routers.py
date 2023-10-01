@@ -31,11 +31,15 @@ def root():
 async def register(user: UserReg):
     # Проверка валидности электронной почты
     if not re.match(r"[^@]+@[^@]+\.[^@]+", user.email):
-        raise HTTPException(status_code=403, detail='Email validation error')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Email validation error')
 
     # Проверка, что пользователь с указанной электронной почтой не существует
     if user.email in get_users_email():
-        raise HTTPException(status_code=403, detail='A user with this email already exists')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='A user with this email already exists')
+
+    # Проверка, что пароль содержит символы
+    if not len(user.password) > 0:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='The password cannot be empty')
 
     # Записываем пользователя в БД
     set_user(user)

@@ -1,13 +1,16 @@
 import re
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import HTMLResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from service.contracts import Token, User, LoginData, UserData
-from service.utils.auth import create_access_token, verify_password
-from service.utils.dao import get_users_email, set_user, get_hashed_password, update_token, get_user_by_token
+from service.contracts import Token, UserReg, User
+from service.utils.auth import create_access_token, verify_password, validate_access_token
+from service.utils.dao import get_users_email, set_user, get_user_by_email
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 # Приветственная HTML страница
@@ -25,7 +28,7 @@ def root():
 
 # Регистрация нового пользователя
 @router.post("/register", response_model=Token)
-async def register(user: User):
+async def register(user: UserReg):
     # Проверка валидности электронной почты
     if not re.match(r"[^@]+@[^@]+\.[^@]+", user.email):
         raise HTTPException(status_code=403, detail='Email validation error')
@@ -39,7 +42,6 @@ async def register(user: User):
 
     # Создание токена аутентификации
     access_token = create_access_token(user.email)
-    update_token(user.email, access_token)
 
     # Возвращение токена аутентификации
     return {"access_token": access_token, "token_type": "bearer"}
@@ -47,29 +49,44 @@ async def register(user: User):
 
 # Аутентификация пользователя
 @router.post("/login", response_model=Token)
-async def login(user: LoginData):
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect username or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
     # Проверка электронной почты пользователя и получение хеша его пароля из базы данных
-    email_hashed_password = get_hashed_password(user.email)
-    if email_hashed_password is None:
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    user = get_user_by_email(form_data.username)
+    if user.hashed_password is None:
+        raise credentials_exception
 
     # Проверка соответствия пароля
-    if not verify_password(user.password, email_hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    if not verify_password(form_data.password, user.hashed_password):
+        raise credentials_exception
 
     # Создание токена аутентификации
-    access_token = create_access_token(user.email)
-    update_token(user.email, access_token)
+    access_token = create_access_token(form_data.username)
 
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 # Получение данных пользователя
-@router.get("/me", response_model=UserData)
-def get_current_user(token: str = Header(...)):
-    # Проверка валидности токена и получение данных пользователя
-    user = get_user_by_token(token)
-    if user is None:
-        raise HTTPException(status_code=401, detail="Incorrect token")
+@router.get("/me", response_model=User)
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    # Проверка валидности токена и получение email
+    email = validate_access_token(token)
+
+    # Получение данных пользователя
+    user_db = get_user_by_email(email)
+    if user_db is None:
+        raise credentials_exception
+    user = User(name=user_db.name, email=user_db.email)
 
     return user

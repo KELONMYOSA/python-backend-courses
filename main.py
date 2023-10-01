@@ -6,15 +6,15 @@ from service.routers import router
 # Creating additional metadata for the tags used to group path operations
 tags_metadata = [
     {
-        "name": "users",
-        "description": "Operations with users.",
+        "name": "Authorization",
+        "description": "Operations with user authorization.",
     },
     {
-        "name": "delay",
-        "description": "Delayed response",
+        "name": "Orders",
+        "description": "Operations with user orders.",
     },
     {
-        "name": "html",
+        "name": "HTML",
         "description": "HTML document",
     },
 ]

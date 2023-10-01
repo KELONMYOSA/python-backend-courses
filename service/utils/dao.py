@@ -3,7 +3,7 @@ import sqlite3
 from service.contracts import UserReg, UserInDB
 from service.utils.auth import get_password_hash
 
-DB_PATH = "service/database.sqlite"
+DB_PATH = "database/database.sqlite"
 
 
 # Получение всех email пользователей

@@ -61,6 +61,7 @@ def create_new_user(user: UserReg) -> dict:
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+# Проверка корректности данных и получение токена
 def login_user(form_data: OAuth2PasswordRequestForm) -> dict:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

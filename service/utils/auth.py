@@ -6,11 +6,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
+from config import settings
 from service.contracts import User, UserReg
 from service.utils.dao import Database
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "my_secret_key"
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

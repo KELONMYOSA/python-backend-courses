@@ -5,7 +5,7 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 
 from service.contracts import User
-from service.utils.dao import get_user_by_email
+from service.utils.dao import Database
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "my_secret_key"
@@ -47,7 +47,8 @@ def authorize_user(token: str) -> User:
         raise credentials_exception
 
     # Получение данных пользователя
-    user_db = get_user_by_email(email)
+    with Database() as db:
+        user_db = db.get_user_by_email(email)
     if user_db is None:
         raise credentials_exception
     user = User(name=user_db.name, email=user_db.email)

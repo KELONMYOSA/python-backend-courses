@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from service.contracts import Token, UserReg, User, Order, OrderForm
 from service.utils.auth import create_access_token, verify_password, authorize_user, get_password_hash
-from service.utils.dao import get_users_email, set_user, get_user_by_email
+from service.utils.dao import Database
 from service.utils.orders import check_order_form, create_order, get_orders_by_email, get_order_by_id_and_email
 
 router = APIRouter()
@@ -35,8 +35,9 @@ async def register(user: UserReg):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Email validation error')
 
     # Проверка, что пользователь с указанной электронной почтой не существует
-    if user.email in get_users_email():
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='A user with this email already exists')
+    with Database() as db:
+        if user.email in db.get_users_email():
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='A user with this email already exists')
 
     # Проверка, что пароль содержит символы
     if not len(user.password) > 0:
@@ -46,7 +47,8 @@ async def register(user: UserReg):
     hashed_password = get_password_hash(user.password)
 
     # Записываем пользователя в БД
-    set_user(user, hashed_password)
+    with Database() as db:
+        db.set_user(user, hashed_password)
 
     # Создание токена аутентификации
     access_token = create_access_token(user.email)
@@ -64,8 +66,9 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     )
 
     # Проверка электронной почты пользователя и получение хеша его пароля из базы данных
-    user = get_user_by_email(form_data.username)
-    if user.hashed_password is None:
+    with Database() as db:
+        user = db.get_user_by_email(form_data.username)
+    if user is None:
         raise credentials_exception
 
     # Проверка соответствия пароля

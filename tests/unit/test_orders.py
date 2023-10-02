@@ -59,7 +59,7 @@ class TestGetOrdersByEmail:
 
         assert orders == []
 
-    # Тест, когда для заданного email нет заказов
+    # Тест, когда для заданного email есть заказы
     def test_get_orders_by_email_with_orders(self):
         email = "existing_email@example.com"
         orders = get_orders_by_email(email)

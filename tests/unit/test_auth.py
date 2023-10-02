@@ -73,7 +73,7 @@ class TestAuthorizeUser:
         assert user.name == "Name"
         assert user.email == "existing_email@example.com"
 
-    # Тест на некорректный токен без указания "sub"
+    # Тест на некорректный токен
     def test_authorize_user_invalid_token(self):
         token = jwt.encode({"sub": "nonexisting_email@example.com"}, "wrong_secret_key", algorithm="HS256")
         with pytest.raises(HTTPException) as exc_info:

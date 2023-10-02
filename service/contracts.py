@@ -51,4 +51,6 @@ class OrderEncoder(json.JSONEncoder):
             return obj.__dict__
         if isinstance(obj, MenuPosition):
             return obj.__dict__
+        if isinstance(obj, OrderForm):
+            return obj.__dict__
         return json.JSONEncoder.default(self, obj)

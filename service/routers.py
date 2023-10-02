@@ -1,4 +1,3 @@
-import re
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends
@@ -6,8 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from service.contracts import Token, UserReg, User, Order, OrderForm
-from service.utils.auth import create_access_token, verify_password, authorize_user, get_password_hash
-from service.utils.dao import Database
+from service.utils.auth import create_new_user, login_user, authorize_user
 from service.utils.orders import check_order_form, create_order, get_orders_by_email, get_order_by_id_and_email
 
 router = APIRouter()
@@ -30,55 +28,13 @@ def root():
 # Регистрация нового пользователя
 @router.post("/register", response_model=Token, tags=["Authorization"])
 async def register(user: UserReg):
-    # Проверка валидности электронной почты
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", user.email):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Email validation error')
-
-    # Проверка, что пользователь с указанной электронной почтой не существует
-    with Database() as db:
-        if user.email in db.get_users_email():
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='A user with this email already exists')
-
-    # Проверка, что пароль содержит символы
-    if not len(user.password) > 0:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='The password cannot be empty')
-
-    # Хеширование пароля
-    hashed_password = get_password_hash(user.password)
-
-    # Записываем пользователя в БД
-    with Database() as db:
-        db.set_user(user, hashed_password)
-
-    # Создание токена аутентификации
-    access_token = create_access_token(user.email)
-
-    return {"access_token": access_token, "token_type": "bearer"}
+    return create_new_user(user)
 
 
 # Аутентификация пользователя
 @router.post("/login", response_model=Token, tags=["Authorization"])
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Incorrect username or password",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    # Проверка электронной почты пользователя и получение хеша его пароля из базы данных
-    with Database() as db:
-        user = db.get_user_by_email(form_data.username)
-    if user is None:
-        raise credentials_exception
-
-    # Проверка соответствия пароля
-    if not verify_password(form_data.password, user.hashed_password):
-        raise credentials_exception
-
-    # Создание токена аутентификации
-    access_token = create_access_token(form_data.username)
-
-    return {"access_token": access_token, "token_type": "bearer"}
+    return login_user(form_data)
 
 
 # Получение данных пользователя

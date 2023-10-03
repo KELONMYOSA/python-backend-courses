@@ -1,5 +1,38 @@
-## Python Backend
+# Homework 2
 
-➠ Each homework is in a branch - "Homework N", where N is the number of homework on the account.
+> Business scenario:
+>
+> Our web application will represent a food delivery service from restaurant. 
+> The user registers, after which he can choose dishes from the menu and place an order.
 
-➠ The solution for verification will be sent to the pull request - "Homework N", where N is the number of homework on the account.
+## How to start
+
+```
+python main.py
+```
+
+## FastAPI arguments
+
+- Host - <code>127.0.0.1</code>
+- Port - <code>80</code>
+- Docs URL - <code>/docs</code>
+
+## How to run tests
+
+### All tests
+
+```
+pytest
+```
+
+### Unit tests
+
+```
+pytest tests/unit
+```
+
+### Integration tests
+
+```
+pytest tests/integration
+```

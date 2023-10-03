@@ -3,7 +3,13 @@
 ## Hardware
 
 ```
-123
+Выпуск	Windows 11 Pro
+Версия	21H2
+Сборка ОС	22000.2416
+
+CPU	- AMD Ryzen 7 5800X 8-Core Processor                3.80 GHz
+RAM	- DDR4 G.SKILL TRIDENT Z RGB 32GB (2x16GB kit)      3600MHz
+ROM - SSD Samsung 980 NVMe M.2 1000 ГБ
 ```
 
 ## Locust

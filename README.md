@@ -1,4 +1,4 @@
-# Homework 2
+# Homework 3
 
 > Business scenario:
 >
@@ -7,8 +7,10 @@
 
 ## How to start
 
+### FastApi
 ```
-python main.py
+fastapi_gateway\venv\Scripts\activate
+python fastapi_gateway\main.py
 ```
 
 ## FastAPI arguments
@@ -22,17 +24,17 @@ python main.py
 ### All tests
 
 ```
-pytest
+python -m pytest fastapi_gateway
 ```
 
 ### Unit tests
 
 ```
-pytest tests/unit
+python -m pytest fastapi_gateway/tests/unit
 ```
 
 ### Integration tests
 
 ```
-pytest tests/integration
+python -m pytest fastapi_gateway/tests/integration
 ```

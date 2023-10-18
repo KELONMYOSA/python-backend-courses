@@ -21,7 +21,7 @@ tags_metadata = [
 
 # Creating an "instance" of the class FastAPI
 app = FastAPI(
-    title="Homework 2",
+    title="Homework 3",
     description="Homework for the ITMO course Python Backend",
     contact={
         "name": "KELONMYOSA",

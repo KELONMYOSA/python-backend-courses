@@ -10,14 +10,6 @@ from service.contracts import OrderForm, OrderEncoder
 
 
 class TestRegister:
-    # Тест на успешную регистрацию
-    def test_register_correct_credentials(self):
-        with TestClient(app) as client:
-            response = client.post("/register", json={"email": "nonexisting_email@example.com", "password": "password"})
-            assert response.status_code == 200
-            assert "access_token" in response.json()
-            assert response.json()["token_type"] == "bearer"
-
     # Тест на валидность электронной почты
     def test_register_invalid_email(self):
         with TestClient(app) as client:

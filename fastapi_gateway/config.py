@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str
     DB_PATH: str
+    GO_AUTH_SERVER: str
 
     MODE: str
 

@@ -1,6 +1,6 @@
-import re
 from datetime import datetime, timedelta
 
+from grpc import aio
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt, JWTError
@@ -9,6 +9,8 @@ from passlib.context import CryptContext
 from config import settings
 from service.contracts import User, UserReg
 from service.utils.dao import Database
+from pb_auth import auth_pb2
+from pb_auth.auth_pb2_grpc import AuthServiceStub
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = settings.SECRET_KEY
@@ -35,31 +37,16 @@ def create_access_token(email: str) -> str:
 
 
 # Проверка корректности данных и создание пользователя
-def create_new_user(user: UserReg) -> dict:
-    # Проверка валидности электронной почты
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", user.email):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Email validation error')
+async def create_new_user(user: UserReg) -> dict:
+    async with aio.insecure_channel(settings.GO_AUTH_SERVER) as channel:
+        stub = AuthServiceStub(channel)
+        try:
+            response = await stub.CreateNewUser(auth_pb2.UserReg(name=user.name, email=user.email,
+                                                                 password=user.password))
+        except aio.AioRpcError as rpc_error:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=rpc_error.details())
 
-    # Проверка, что пользователь с указанной электронной почтой не существует
-    with Database() as db:
-        if user.email in db.get_users_email():
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='A user with this email already exists')
-
-    # Проверка, что пароль содержит символы
-    if not len(user.password) > 0:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='The password cannot be empty')
-
-    # Хеширование пароля
-    hashed_password = get_password_hash(user.password)
-
-    # Записываем пользователя в БД
-    with Database() as db:
-        db.set_user(user, hashed_password)
-
-    # Создание токена аутентификации
-    access_token = create_access_token(user.email)
-
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": response.access_token, "token_type": response.token_type}
 
 
 # Проверка корректности данных и получение токена

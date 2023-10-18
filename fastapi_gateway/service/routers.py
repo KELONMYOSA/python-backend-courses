@@ -28,7 +28,7 @@ def root():
 # Регистрация нового пользователя
 @router.post("/register", response_model=Token, tags=["Authorization"])
 async def register(user: UserReg):
-    return create_new_user(user)
+    return await create_new_user(user)
 
 
 # Аутентификация пользователя

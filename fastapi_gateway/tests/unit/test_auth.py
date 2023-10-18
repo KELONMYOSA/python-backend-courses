@@ -3,41 +3,7 @@ from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 
-from service.contracts import UserReg
-from service.utils.auth import create_new_user, login_user, create_access_token, authorize_user
-
-
-class TestCreateNewUser:
-    # Тест на корректные данные
-    def test_create_new_user_correct_credentials(self):
-        user = UserReg(email="nonexisting_email@example.com", password="password")
-        response = create_new_user(user)
-        assert "access_token" in response
-        assert response["token_type"] == "bearer"
-
-    # Тест на валидность электронной почты
-    def test_create_new_user_invalid_email(self):
-        user = UserReg(email="invalid_email", password="password")
-        with pytest.raises(HTTPException) as exc_info:
-            create_new_user(user)
-        assert exc_info.value.status_code == 403
-        assert exc_info.value.detail == 'Email validation error'
-
-    # Тест на существование пользователя с указанной электронной почтой
-    def test_create_new_user_existing_email(self):
-        user = UserReg(email="existing_email@example.com", password="password")
-        with pytest.raises(HTTPException) as exc_info:
-            create_new_user(user)
-        assert exc_info.value.status_code == 403
-        assert exc_info.value.detail == 'A user with this email already exists'
-
-    #  Тест на пустой пароль
-    def test_create_new_user_empty_password(self):
-        user = UserReg(email="nonexisting_email@example.com", password="")
-        with pytest.raises(HTTPException) as exc_info:
-            create_new_user(user)
-        assert exc_info.value.status_code == 403
-        assert exc_info.value.detail == 'The password cannot be empty'
+from service.utils.auth import login_user, create_access_token, authorize_user
 
 
 class TestLoginUser:

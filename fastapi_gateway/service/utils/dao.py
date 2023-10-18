@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 
 from config import settings
-from service.contracts import UserReg, UserInDB, MenuPosition, Order, OrderEncoder
+from service.contracts import MenuPosition, Order, OrderEncoder
 
 
 class Database:
@@ -28,29 +28,6 @@ class Database:
         else:
             self.connection.commit()
         self.connection.close()
-
-    # Получение всех email пользователей
-    def get_users_email(self) -> list[str]:
-        self.cur.execute('SELECT email FROM user')
-        emails = self.cur.fetchall()
-        emails = list(map(lambda x: x[0], emails))
-
-        return emails
-
-    # Создание нового пользователя
-    def set_user(self, user: UserReg, hashed_password: str):
-        self.cur.execute('INSERT INTO user (name, email, password) VALUES (?, ?, ?)',
-                         (user.name, user.email, hashed_password))
-
-    # Получаем данные пользователя по email
-    def get_user_by_email(self, email: str) -> UserInDB | None:
-        self.cur.execute('SELECT name, email, password FROM user WHERE email = ?', (email,))
-        result = self.cur.fetchall()
-        user = None
-        if result:
-            user = UserInDB(name=result[0][0], email=result[0][1], hashed_password=result[0][2])
-
-        return user
 
     # Получение всех id позиций в меню
     def get_menu_ids(self) -> list[int]:

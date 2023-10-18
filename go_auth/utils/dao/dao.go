@@ -1,10 +1,9 @@
 package dao
 
 import (
-	pb "go_auth/pb_auth"
-
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+	pb "go_auth/pb_auth"
 )
 
 type Database struct {
@@ -68,11 +67,12 @@ type UserInDB struct {
 func (d *Database) GetUserByEmail(email string) UserInDB {
 	row := d.db.QueryRow("SELECT name, email, password FROM user WHERE email = ?", email)
 
-	var name, hashedPassword string
+	var name sql.NullString
+	var hashedPassword string
 	err := row.Scan(&name, &email, &hashedPassword)
 	if err != nil {
 		return UserInDB{}
 	}
 
-	return UserInDB{Name: name, Email: email, HashedPassword: hashedPassword}
+	return UserInDB{Name: name.String, Email: email, HashedPassword: hashedPassword}
 }

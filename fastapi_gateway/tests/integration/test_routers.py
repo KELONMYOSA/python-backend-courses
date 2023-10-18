@@ -58,9 +58,10 @@ class TestLogin:
 
 class TestGetCurrentUser:
     # Тест на успешное получение данных аутентифицированного пользователя
-    def test_get_current_user(self, auth_token):
+    @pytest.mark.asyncio
+    async def test_get_current_user(self, auth_token):
         with TestClient(app) as client:
-            response = client.get("/me", headers={"Authorization": f"Bearer {auth_token}"})
+            response = client.get("/me", headers={"Authorization": f"Bearer {await auth_token}"})
             assert response.status_code == 200
             user_data = json.loads(response.content)
             assert user_data["name"] == "admin"
@@ -76,10 +77,11 @@ class TestGetCurrentUser:
 
 class TestSetUserOrder:
     # Тест на корректную форму и аутентифицированного пользователя
-    def test_set_order_correct_form(self, auth_token):
+    @pytest.mark.asyncio
+    async def test_set_order_correct_form(self, auth_token):
         with TestClient(app) as client:
             order_form = [OrderForm(menu_position_id=2, count=2), OrderForm(menu_position_id=5, count=3)]
-            response = client.post("/order", headers={"Authorization": f"Bearer {auth_token}"},
+            response = client.post("/order", headers={"Authorization": f"Bearer {await auth_token}"},
                                    content=json.dumps(order_form, cls=OrderEncoder))
             assert response.status_code == 200
             order_data = json.loads(response.content)
@@ -96,6 +98,7 @@ class TestSetUserOrder:
     # order_form0 - Тест на пустую форму заказа
     # order_form1 - Тест на некорректное количество позиций в форме заказа
     # order_form2 - Тест на некорректный идентификатор позиции в форме заказа
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "order_form",
         [
@@ -104,9 +107,9 @@ class TestSetUserOrder:
             ([OrderForm(menu_position_id=99, count=3)]),
         ],
     )
-    def test_set_order_invalid_form(self, auth_token, order_form):
+    async def test_set_order_invalid_form(self, auth_token, order_form):
         with TestClient(app) as client:
-            response = client.post("/order", headers={"Authorization": f"Bearer {auth_token}"},
+            response = client.post("/order", headers={"Authorization": f"Bearer {await auth_token}"},
                                    content=json.dumps(order_form, cls=OrderEncoder))
             assert response.status_code == 404
             assert json.loads(response.content)["detail"] == "The items specified in the order were not found"
@@ -114,18 +117,20 @@ class TestSetUserOrder:
 
 class TestGetUserOrders:
     # Тест для пользователя, у которого есть заказы
-    def test_get_user_orders_with_orders(self, auth_token):
+    @pytest.mark.asyncio
+    async def test_get_user_orders_with_orders(self, auth_token):
         with TestClient(app) as client:
-            response = client.get("/orders", headers={"Authorization": f"Bearer {auth_token}"})
+            response = client.get("/orders", headers={"Authorization": f"Bearer {await auth_token}"})
             assert response.status_code == 200
             orders_data = json.loads(response.content)
             assert orders_data[0]["id"] == 2
             assert orders_data[1]["id"] == 3
 
     # Тест для пользователя, у которого нет заказов
-    def test_get_user_orders_no_orders(self, auth_token_no_orders):
+    @pytest.mark.asyncio
+    async def test_get_user_orders_no_orders(self, auth_token_no_orders):
         with TestClient(app) as client:
-            response = client.get("/orders", headers={"Authorization": f"Bearer {auth_token_no_orders}"})
+            response = client.get("/orders", headers={"Authorization": f"Bearer {await auth_token_no_orders}"})
             assert response.status_code == 200
             assert response.content == b"[]"
 
@@ -139,19 +144,21 @@ class TestGetUserOrders:
 
 class TestGetUserOrderById:
     # Тест для аутентифицированного пользователя с корректным id
-    def test_get_user_order_by_id(self, auth_token):
+    @pytest.mark.asyncio
+    async def test_get_user_order_by_id(self, auth_token):
         with TestClient(app) as client:
             order_id = 2
-            response = client.get(f"/order/{order_id}", headers={"Authorization": f"Bearer {auth_token}"})
+            response = client.get(f"/order/{order_id}", headers={"Authorization": f"Bearer {await auth_token}"})
             assert response.status_code == 200
             orders_data = json.loads(response.content)
             assert orders_data["id"] == 2
 
     # Тест для пользователя, у которого нет заказа с таким id
-    def test_get_user_order_by_id_invalid_id(self, auth_token):
+    @pytest.mark.asyncio
+    async def test_get_user_order_by_id_invalid_id(self, auth_token):
         with TestClient(app) as client:
             order_id = 99
-            response = client.get(f"/order/{order_id}", headers={"Authorization": f"Bearer {auth_token}"})
+            response = client.get(f"/order/{order_id}", headers={"Authorization": f"Bearer {await auth_token}"})
             assert response.status_code == 404
             assert json.loads(response.content)["detail"] == "An order with this id was not found for this user"
 

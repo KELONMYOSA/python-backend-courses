@@ -27,16 +27,16 @@ def setup_db():
 
 
 @pytest.fixture()
-def auth_token():
+async def auth_token():
     form_data = OAuth2PasswordRequestForm(username="admin@mail.ru", password="admin")
-    response = login_user(form_data)
+    response = await login_user(form_data)
 
     return response["access_token"]
 
 
 @pytest.fixture()
-def auth_token_no_orders():
+async def auth_token_no_orders():
     form_data = OAuth2PasswordRequestForm(username="test@mail.ru", password="test")
-    response = login_user(form_data)
+    response = await login_user(form_data)
 
     return response["access_token"]

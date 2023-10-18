@@ -2,12 +2,12 @@ package auth
 
 import (
 	"context"
-	"go_auth/utils/dao"
 	"log"
 	"regexp"
 	"time"
 
 	pb "go_auth/pb_auth"
+	"go_auth/utils/dao"
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
@@ -101,5 +101,68 @@ func (s *Server) CreateNewUser(_ context.Context, req *pb.UserReg) (*pb.Token, e
 	return &pb.Token{
 		AccessToken: accessToken,
 		TokenType:   "bearer",
+	}, nil
+}
+
+// LoginUser - Проверка корректности данных и получение токена
+func (s *Server) LoginUser(_ context.Context, req *pb.UserLogin) (*pb.Token, error) {
+	// Проверка электронной почты пользователя и получение хеша его пароля из базы данных
+	db := dao.Connect()
+	user := db.GetUserByEmail(req.Email)
+	db.Close()
+	if user == (dao.UserInDB{}) {
+		return nil, status.Error(codes.Unauthenticated, "Incorrect username or password")
+	}
+
+	// Проверка соответствия пароля
+	if !verifyPassword(req.Password, user.HashedPassword) {
+		return nil, status.Error(codes.Unauthenticated, "Incorrect username or password")
+	}
+
+	// Создание токена аутентификации
+	accessToken, err := createAccessToken(req.Email)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "Incorrect username or password")
+	}
+
+	log.Printf("Successful login: %v", req.Email)
+
+	return &pb.Token{
+		AccessToken: accessToken,
+		TokenType:   "bearer",
+	}, nil
+}
+
+// AuthUser - Проверка токена и получение данных пользователя
+func (s *Server) AuthUser(_ context.Context, req *pb.Token) (*pb.UserData, error) {
+	// Проверяем валидность токена
+	tokenClaims := jwt.MapClaims{}
+	tokenParser := jwt.Parser{ValidMethods: []string{"HS256"}}
+	token, err := tokenParser.ParseWithClaims(req.AccessToken, tokenClaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, status.Error(codes.Unauthenticated, "Could not validate credentials")
+	}
+
+	email, ok := tokenClaims["sub"].(string)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "Could not validate credentials")
+	}
+
+	// Получаем данные пользователя
+	db := dao.Connect()
+	user := db.GetUserByEmail(email)
+	db.Close()
+	if user == (dao.UserInDB{}) {
+		return nil, status.Error(codes.Unauthenticated, "Could not validate credentials")
+	}
+
+	log.Printf("Successful authorization: %v", email)
+
+	return &pb.UserData{
+		Name:  &user.Name,
+		Email: user.Email,
 	}, nil
 }

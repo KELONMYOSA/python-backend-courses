@@ -9,6 +9,11 @@
 
 - *fastapi_gateway* - **API gateway**
 - *go_auth* - **Authentication server**
+- *express_charts* - **Data visualization**
+
+> fastapi_gateway ← **gRPC** → go_auth
+> 
+> fastapi_gateway ← **HTTP** → express_charts
 
 ---
 
@@ -26,6 +31,20 @@ cd go_auth && go mod tidy & cd ..
 
 ```
 cd go_auth && set CGO_ENABLED=1 && go run go_auth -port 8081 & cd ..
+```
+
+### 2. Express
+
+- Install the dependencies for the `express` service
+
+```
+cd express_charts && npm install & cd ..
+```
+
+- Run the `express` service
+
+```
+cd express_charts && set PORT=8082 && npm start & cd ..
 ```
 
 ### 3. FastApi

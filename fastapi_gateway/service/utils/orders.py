@@ -1,6 +1,11 @@
+import json
 from datetime import datetime
 
-from service.contracts import OrderForm, Order, OrderPosition
+from aiohttp import ClientSession
+from fastapi import HTTPException
+
+from config import settings
+from service.contracts import OrderForm, Order, OrderPosition, OrderEncoder
 from service.utils.dao import Database
 
 
@@ -82,3 +87,22 @@ def get_order_by_id_and_email(email: str, order_id: int) -> Order | None:
         order = db.get_order_by_id(order_id)
 
     return order
+
+
+# Получаем картинку с круговой диаграммой количества блюд в заказах
+async def get_user_dishes_chart_png(email: str, orders: list[Order]):
+    r_body = {
+        "email": email,
+        "orders": [order.positions for order in orders],
+    }
+    json_body = json.dumps(r_body, cls=OrderEncoder)
+
+    async with ClientSession() as session:
+        async with session.post(f"http://{settings.EXPRESS_CHARTS_SERVER}/chart/dishes", data=json_body,
+                               headers={"Content-Type": "application/json"}) as resp:
+            image_bytes = await resp.read()
+
+    if resp.status == 200:
+        return image_bytes
+    else:
+        raise HTTPException(status_code=resp.status)

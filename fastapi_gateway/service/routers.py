@@ -1,12 +1,15 @@
+import io
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import StreamingResponse
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from service.contracts import Token, UserReg, User, Order, OrderForm
 from service.utils.auth import create_new_user, login_user, authorize_user
-from service.utils.orders import check_order_form, create_order, get_orders_by_email, get_order_by_id_and_email
+from service.utils.orders import check_order_form, create_order, get_orders_by_email, get_order_by_id_and_email, \
+    get_user_dishes_chart_png
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -70,6 +73,21 @@ async def get_user_orders(token: Annotated[str, Depends(oauth2_scheme)]):
     orders = get_orders_by_email(user.email)
 
     return orders
+
+
+# Получение png с круговой диаграммой количества блюд в заказах
+@router.get("/orders/chart/dishes", tags=["Orders"])
+async def get_user_dishes_chart(token: Annotated[str, Depends(oauth2_scheme)]):
+    # Авторизация пользователя
+    user = await authorize_user(token)
+
+    # Получение заказов пользователя
+    orders = get_orders_by_email(user.email)
+
+    # Получаем картинку
+    img_bytes = await get_user_dishes_chart_png(user.email, orders)
+
+    return StreamingResponse(io.BytesIO(img_bytes), media_type="image/png")
 
 
 # Получение заказа пользователя по id

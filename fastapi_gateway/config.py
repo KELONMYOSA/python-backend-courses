@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     DB_PATH: str
     GO_AUTH_SERVER: str
+    EXPRESS_CHARTS_SERVER: str
 
     MODE: str
 

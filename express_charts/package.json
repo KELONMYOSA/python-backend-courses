@@ -1,0 +1,17 @@
+{
+  "name": "express_charts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chart.js": "^4.4.0",
+    "chartjs-to-image": "^1.2.1",
+    "express": "^4.18.2"
+  }
+}

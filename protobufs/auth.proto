@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package pb.auth;
+
+option go_package = "go_auth/pb_auth";
+
+message UserReg {
+  string email = 1;
+  string password = 2;
+  optional string name = 3;
+}
+
+message UserLogin {
+  string email = 1;
+  string password = 2;
+}
+
+message UserData {
+  string email = 1;
+  optional string name = 2;
+}
+
+message Token {
+  string access_token = 1;
+  string token_type = 2;
+}
+
+service AuthService {
+  rpc CreateNewUser(UserReg) returns (Token);
+  rpc LoginUser(UserLogin) returns (Token);
+  rpc AuthUser(Token) returns (UserData);
+}

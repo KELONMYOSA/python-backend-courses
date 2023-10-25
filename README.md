@@ -13,6 +13,12 @@ docker compose up -d
 
 ## FastAPI arguments
 
-- Host - <code>127.0.0.1</code>
+- Host - <code>localhost</code>
 - Port - <code>80</code>
 - Docs URL - <code>/docs</code>
+
+## Architecture
+
+<p align="center">
+  <img src="images/scheme.png">
+</p>

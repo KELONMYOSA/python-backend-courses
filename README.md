@@ -1,5 +1,24 @@
-## Python Backend
+# Homework 4
 
-➠ Each homework is in a branch - "Homework N", where N is the number of homework on the account.
+> Business scenario:
+>
+> We have an online store, and orders may require lengthy processing, and we do not want the user to expect a result. 
+> Orders are processed asynchronously using Celery and RabbitMQ.
 
-➠ The solution for verification will be sent to the pull request - "Homework N", where N is the number of homework on the account.
+## How to start
+
+```
+docker compose up -d
+```
+
+## FastAPI arguments
+
+- Host - <code>localhost</code>
+- Port - <code>80</code>
+- Docs URL - <code>/docs</code>
+
+## Architecture
+
+<p align="center">
+  <img src="images/scheme.png">
+</p>
